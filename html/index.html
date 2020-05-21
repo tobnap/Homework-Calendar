@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>HW Calendar</title>
+
+<style>
+body {
+	line-height: 1.25rem;
+}
+
+.class1 {
+	align-items: center;
+	display: flex;
+	flex-direction: column;
+}
+.class2 {
+	align-self: center;
+	bottom: 0;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	position: absolute;
+	top: 4rem;
+}
+
+.class3 {
+	text-align: center;
+}
+
+.class4 {
+	display: flex;
+	border: .0625rem solid #dadce0;
+	flex: 1 1 auto;
+	margin: 1rem;
+	margin-bottom: 1.5rem;
+	border-radius: 0.5rem;
+}
+
+.week {
+	width: 40px;
+	height: 10px;
+}
+
+.box {
+	width: 16rem;
+	border-right: .0625rem solid #e0e0e0;
+	flex-direction: column;
+}
+
+.box:last-child {
+	border-right: 0;
+}
+
+.day {
+	text-align: center;
+}
+
+.assignment {
+	color: #fff;
+	background-color: #1967d2;
+	border-radius: 0.25rem;
+	margin: 0.25rem;
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
+    padding: 0.5rem;
+	font-weight: 500;
+    text-decoration: none;
+}
+</style>
+
+<script src='https://code.jquery.com/jquery-3.4.1.js'></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
+<script>
+//Grab data about classes from cookie
+$(document).ready(function() {
+	//{'login':1, 'loginEmail':'sn23.napolitanot@spartandocs.org', 'loginPassword':'xxxxxxx', 'preNavigation':0, 'preNavButtons':[''], 'preNavButtonTypes':[''], 'preNavButtonNumbers':[''], 'navigation':0, 'navButtons':[['']], 'navButtonTypes':[['']], 'navButtonNumbers':[['']], 'elements':['reG5qe', 'reG5qe', 'reG5qe', 'reG5qe', 'reG5qe'], 'elementTypes':['classname', 'classname', 'classname', 'classname', 'classname'], 'elementNumbers':[1, 2, 3, 4, 5], 'replace':0, 'replaceText':[''], 'navForward':'navForward1', 'navBack':'navBack1', 'url':'https://classroom.google.com/u/0/calendar/this-week/course/Mzc0NDUxMzMwMTNa', 'weekNum':0}
+
+	if (!!$.cookie('calendar-data')) {
+		var calendarData = JSON.parse($.cookie("calendar-data"));
+		for(var i = 0; i < calendarData.length; i++) {
+			var data = calendarData[i];
+			console.log(data);
+			for (var j = 0; j < 5; j++) {
+				for (var k = 0; k < data[j].length; k++) {
+					$('#'+ j +' .info').append('<div class="assignment">' + data[j][k] + '</div>');
+				}
+			}
+		}
+	} else {
+		$.get('/api', {'data':[{'login':0, 'loginEmail':'', 'loginPassword':'', 'preNavigation':0, 'preNavButtons':[''], 'preNavButtonTypes':[''], 'preNavButtonNumbers':[''], 'navigation':0, 'navButtons':[['']], 'navButtonTypes':[['']], 'navButtonNumbers':[['']], 'elements':['x2y3', 'x3y3', 'x4y3', 'x5y3', 'x6y3'], 'elementTypes':['id', 'id', 'id', 'id', 'id'], 'elementNumbers':[0, 0, 0, 0, 0], 'replace':0, 'replaceText':[''], 'navForward':'nextButton', 'navBack':'prevButton', 'url':'https://planbook.com/planbook.html?t=1045823&k=Dottery&v=W&c=12587273&y=1218647', 'weekNum':0}]},
+		function (responseData, textStatus, jqXHR) {
+			console.log(responseData);
+			$.cookie("calendar-data", JSON.stringify(responseData));
+			for(var i = 0; i < responseData.length; i++) {
+				var data = responseData[i];
+				console.log(data);
+				for (var j = 0; j < 5; j++) {
+					for (var k = 0; k < data[j].length; k++) {
+						$('#'+ j +' .info').append('<div class="assignment">' + data[j][k] + '</div>');
+					}
+				}
+			}
+		});
+	}
+
+	
+
+	var dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+	
+	for (var i = 0; i < 5; i++) {
+		var curr = new Date;
+		var date = new Date(curr.setDate(curr.getDate() - curr.getDay()+i+1));
+		$('#'+i+' .day .dayName').text(dayNames[i]);
+		$('#'+i+' .day .dayNum').text(date.getDate());
+	}
+});
+</script>
+
+</head>
+
+<body>
+
+<div class='class1'>
+	<div class='class2'>
+		<div class='class3'>
+			<div><</div>
+			<div class='week'></div>
+			<div>></div>
+		</div>
+
+		<div class='class4'>
+			<section class='box' id='0'>
+				<h2 class='day'>
+					<div class = 'dayName'></div>
+					<div class = 'dayNum'></div>
+				</h2>
+				<div class='info'>
+			</section>
+			
+			<section class='box' id='1'>
+				<h2 class='day'>
+					<div class = 'dayName'></div>
+					<div class = 'dayNum'></div>
+				</h2>
+				<div class='info'>
+			</section>
+			
+			<section class='box' id='2'>
+				<h2 class='day'>
+					<div class = 'dayName'></div>
+					<div class = 'dayNum'></div>
+				</h2>
+				<div class='info'>
+			</section>
+			
+			<section class='box' id='3'>
+				<h2 class='day'>
+					<div class = 'dayName'></div>
+					<div class = 'dayNum'></div>
+				</h2>
+				<div class='info'>
+			</section>
+			
+			<section class='box' id='4'>
+				<h2 class='day'>
+					<div class = 'dayName'></div>
+					<div class = 'dayNum'></div>
+				</h2>
+				<div class='info'>
+			</section>
+		</div>
+	</div>
+</div>
+
+</body>
+</html>
