@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>HW Calendar Config</title>
+
+<script src='https://code.jquery.com/jquery-3.4.1.js'></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js'></script>
+<script>
+console.log($('textarea#queryData').val());
+</script>
+
+</head>
+
+<body>
+
+<textarea id='queryData'></textarea>
+<button onclick="$.cookie('query-data', btoa($('textarea#queryData').val()))">Add to config</button>
+
+</body>
+</html>

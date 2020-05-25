@@ -1,11 +1,7 @@
+// Puppeteer is an external library that allows you to control a browser from a javascript application
 var puppeteer = require('puppeteer');
 
-async function scrape(login, loginEmail, loginPassword, preNavigation, preNavButtons, preNavButtonTypes, preNavButtonNumbers, navigation, navButtons, navButtonTypes, navButtonNumbers, elements, elementTypes, elementNumbers, replace, replaceText, navForward, navBack, url, weekNum) {
-    var browser = await puppeteer.launch({ headless: false });
-    var page = await browser.newPage();
-
-    await page.goto(url);
-
+async function doLogin(page, login, loginEmail, loginPassword) {
     if (login == true) {
         await page.type('[type=email]', loginEmail);
 
@@ -21,7 +17,9 @@ async function scrape(login, loginEmail, loginPassword, preNavigation, preNavBut
             page.waitForNavigation({ waitUntil: 'networkidle0' }),
         ]);
     }
+}
 
+async function preNavigate(preNavigation, preNavButtons, preNavButtonTypes, preNavButtonNumbers) {
     if (preNavigation == true) {
         for (var i = 0; i < preNavButtons.length; i++) {
             if (preNavButtonTypes[i] == 'id') {
@@ -39,9 +37,9 @@ async function scrape(login, loginEmail, loginPassword, preNavigation, preNavBut
             }
         }
     }
+}
 
-    console.log(weekNum);
-
+async function gotoWeek(page, weekNum) {
     while (weekNum != 0) {
         if (weekNum > 0) {
             await Promise.all([
@@ -57,13 +55,35 @@ async function scrape(login, loginEmail, loginPassword, preNavigation, preNavBut
             weekNum++;
         }
     }
+}
 
+// Scrape function "scrapes" or gathers data from pages with classroom assignments
+async function scrape(login, loginEmail, loginPassword, preNavigation, preNavButtons, preNavButtonTypes, preNavButtonNumbers, navigation, navButtons, navButtonTypes, navButtonNumbers, elements, elementTypes, elementNumbers, replace, replaceText, navForward, navBack, url, weekNum) {
+    // Launch an instance of a chromium browser controlled by puppeteer not in headless mode
+    var browser = await puppeteer.launch({ headless: false });
+    var page = await browser.newPage();
+
+    // Puppeteer goes to the url and waits for the page to load
+    await page.goto(url);
+
+    // If the login parameter is true, login
+    await doLogin(page, login, loginEmail, loginPassword);
+
+    // If the preNavigation parameter is true, do the required navigation to get to the page with the classroom assigments
+    await preNavigate(preNavigation, preNavButtons, preNavButtonTypes, preNavButtonNumbers);
+
+    // If week number is not 0 navigate forward or backward in time and adjust weekNum accordingly until weekNum is 0
+    await gotoWeek(page, weekNum);
+
+    // Executes the code on the page to gather the assignment data
     var data = await page.evaluate( (navigation, navButtons, navButtonTypes, navButtonNumbers, elements, elementTypes, elementNumbers) => {
         var week = [];
 
+        // Loop for every day in a school week
         for (var i = 0; i < 5; i++) {
             var day = [];
 
+            // If navigation is true, navigate to the element that needs to be scraped
             if (navigation == true) {
                 for (var j = 0; j < navButtons.length; j++) {
                     if (navButtonTypes[i][j] == 'id') {
@@ -82,37 +102,30 @@ async function scrape(login, loginEmail, loginPassword, preNavigation, preNavBut
                 }
             }
 
+            // Scrape assigment info from page and adds it to day array
             if (elementTypes[i] == 'id') {
-                var test = (document.getElementById(elements[i]).innerText).replace(/HOMEWORK: .*$/, '');
-                day.push(test);
-                //day.push((document.getElementById(elements[i]).innerText).replace(/HOMEWORK: .*$/, ''));
+                day.push(document.getElementById(elements[i]).innerText);
             } else if (elementTypes[i] == 'classname') {
-                console.log(elements);
-                console.log(elementNumbers);
                 for (var j = 0; j < document.getElementsByClassName(elements[i])[elementNumbers[i]].childNodes.length; j++) {
-                    console.log(i);
-                    console.log(elements[i]);
                     day.push(document.getElementsByClassName(elements[i])[elementNumbers[i]].childNodes[j].innerText);
                 }
             } else if (elementTypes[i] == 'name') {
                 for (var j = 0; j < document.getElementsByName(elements[i])[elementNumbers[i]].childNodes.length; j++) {
                     day.push(document.getElementsByName(elements[i])[elementNumbers[i]].childNodes[j].innerText);
                 }
-                //day.push(document.getElementsByName(elements[i])[elementNumbers[i]].innerText);
             } else if (elementTypes[i] == 'tagname') {
                 for (var j = 0; j < document.getElementsByTagName(elements[i])[elementNumbers[i]].childNodes.length; j++) {
                     day.push(document.getElementsByTagName(elements[i])[elementNumbers[i]].childNodes[j].innerText);
                 }
-                //day.push(document.getElementsByTagName(elements[i])[elementNumbers[i]].innerText);
             } else if (elementTypes[i] == 'tagnamens') {
                 for (var j = 0; j < document.getElementsByTagNameNS(elements[i])[elementNumbers[i]].childNodes.length; j++) {
                     day.push(document.getElementsByTagNameNS(elements[i])[elementNumbers[i]].childNodes[j].innerText);
                 }
-                //day.push(document.getElementsByTagNameNS(elements[i])[elementNumbers[i]].innerText);
             } else {
                 console.log('invalid type');
             }
 
+            // Push the array full of the assigments for that day to the assigments for the week array
             week.push(day);
         }
 
@@ -126,38 +139,39 @@ async function scrape(login, loginEmail, loginPassword, preNavigation, preNavBut
     return data;
 }
 
+// Express is an external library that allows your application to accept http requests
 var express = require('express');
+// To read post requests express needs body parser
+var bodyParser = require("body-parser");
 var app = express();
 var port = 8080;
 
+// Configure express to user body parser
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+
+// For every file ending in .html in the html folder send the file to the user loading the page
 app.get('/*.html?', function (req,res) {
     res.sendFile(req.url, {root: './html'});
 });
 
-app.get('/api', function (req, res) {
+// Respond to api request from client
+app.post('/api', function (req, res) {
     var response = [];
     (async () => {
-        for (var i = 0; i < req.query.data.length; i++) {
-            var request = req.query.data[i];
-            console.log(request);
+        // Loop through every source that needs to be scraped. 
+        for (var i = 0; i < req.body.data.length; i++) {
+            var request = req.body.data[i];
+            // Pass info from request into scrape function
             data = scrape(request.login, request.loginEmail, request.loginPassword, request.preNavigation, request.preNavButtons, request.preNavButtonTypes, request.preNavButtonNumbers, request.navigation, request.navButtons, request.navButtonTypes, request.navButtonNumbers, request.elements, request.elementTypes, request.elementNumbers, request.replace, request.replaceText, request.navForward, request.navBack, request.url, request.weekNum);
             response.push(await data);
         }
-        console.log(response);
+        // Return response to the client
         res.send(response);
     })();
 });
 
-app.listen(port, () => console.log(`Example app listening at port ${port}`));
-
-//Algebra Google Classroom
-//scrape(true, 'sn23.napolitanot@spartandocs.org', 'xxxxxxxx', false, [], [], [], false, [[]], [[]], [[]], ['reG5qe', 'reG5qe', 'reG5qe', 'reG5qe', 'reG5qe'], ['classname', 'classname', 'classname', 'classname', 'classname'], [1, 2, 3, 4, 5], false, [], 'navForward1', 'navBack1', 'https://classroom.google.com/u/0/calendar/this-week/course/Mzc0NDUxMzMwMTNa', 0);
-
-//Algebra Planbook
-//scrape(false, '', '', false, [], [], [], false, [[]], [[]], [[]], ['x2y3', 'x3y3', 'x4y3', 'x5y3', 'x6y3'], ['id', 'id', 'id', 'id', 'id'], [0, 0, 0, 0, 0], false, [], 'nextButton', 'prevButton', 'https://planbook.com/planbook.html?t=1045823&k=Dottery&v=W&c=12587273&y=1218647', 0);
-
-//English Planbook
-//scrape(false, '', '', false, [], [], [], false, [[]], [[]], [[]], ['x2y4', 'x3y4', 'x4y4', 'x5y4', 'x6y4'], ['id', 'id', 'id', 'id', 'id'], [0, 0, 0, 0, 0], false, [], 'nextButton', 'prevButton', 'https://www.planbook.com/planbook.html?t=1048052&k=howsare&v=W&y=1357655', 0);
+app.listen(port, () => console.log(`App listening at port ${port}`));
 
 //Bio Google Calendar
 //scrape(false, '', '', true, ['tab-controller-container-week'], ['id'], [0], true, [[]], [[]], [[]], ['x2y3', 'x3y3', 'x4y3', 'x5y3', 'x6y3'], ['id', 'id', 'id', 'id', 'id'], [0, 0, 0, 0, 0], false, [], 'nextButton', 'prevButton', 'https://calendar.google.com/calendar/embed?src=spartandocs.org_mqhtkienr3dqv20drmtfhd2rgs%40group.calendar.google.com&ctz=America/New_York', 0);

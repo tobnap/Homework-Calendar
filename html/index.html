@@ -70,41 +70,57 @@ body {
 </style>
 
 <script src='https://code.jquery.com/jquery-3.4.1.js'></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js'></script>
 <script>
-//Grab data about classes from cookie
-$(document).ready(function() {
-	//{'login':1, 'loginEmail':'sn23.napolitanot@spartandocs.org', 'loginPassword':'xxxxxxx', 'preNavigation':0, 'preNavButtons':[''], 'preNavButtonTypes':[''], 'preNavButtonNumbers':[''], 'navigation':0, 'navButtons':[['']], 'navButtonTypes':[['']], 'navButtonNumbers':[['']], 'elements':['reG5qe', 'reG5qe', 'reG5qe', 'reG5qe', 'reG5qe'], 'elementTypes':['classname', 'classname', 'classname', 'classname', 'classname'], 'elementNumbers':[1, 2, 3, 4, 5], 'replace':0, 'replaceText':[''], 'navForward':'navForward1', 'navBack':'navBack1', 'url':'https://classroom.google.com/u/0/calendar/this-week/course/Mzc0NDUxMzMwMTNa', 'weekNum':0}
+function clearCachedData() {
+	for (var i = 0; i < 5; i++) {
+		$('#'+ i +' .info')[0].innerHTML = '';
+	}
+}
 
-	if (!!$.cookie('calendar-data')) {
-		var calendarData = JSON.parse($.cookie("calendar-data"));
-		for(var i = 0; i < calendarData.length; i++) {
-			var data = calendarData[i];
-			console.log(data);
-			for (var j = 0; j < 5; j++) {
-				for (var k = 0; k < data[j].length; k++) {
-					$('#'+ j +' .info').append('<div class="assignment">' + data[j][k] + '</div>');
-				}
-			}
-		}
-	} else {
-		$.get('/api', {'data':[{'login':0, 'loginEmail':'', 'loginPassword':'', 'preNavigation':0, 'preNavButtons':[''], 'preNavButtonTypes':[''], 'preNavButtonNumbers':[''], 'navigation':0, 'navButtons':[['']], 'navButtonTypes':[['']], 'navButtonNumbers':[['']], 'elements':['x2y3', 'x3y3', 'x4y3', 'x5y3', 'x6y3'], 'elementTypes':['id', 'id', 'id', 'id', 'id'], 'elementNumbers':[0, 0, 0, 0, 0], 'replace':0, 'replaceText':[''], 'navForward':'nextButton', 'navBack':'prevButton', 'url':'https://planbook.com/planbook.html?t=1045823&k=Dottery&v=W&c=12587273&y=1218647', 'weekNum':0}]},
-		function (responseData, textStatus, jqXHR) {
-			console.log(responseData);
-			$.cookie("calendar-data", JSON.stringify(responseData));
+function getCalendarData() {
+	//{"data":[{"login":0, "loginEmail":"", "loginPassword":"", "preNavigation":0, "preNavButtons":[""], "preNavButtonTypes":[""], "preNavButtonNumbers":[""], "navigation":0, "navButtons":[[""]], "navButtonTypes":[[""]], "navButtonNumbers":[[""]], "elements":["x2y3", "x3y3", "x4y3", "x5y3", "x6y3"], "elementTypes":["id", "id", "id", "id", "id"], "elementNumbers":[0, 0, 0, 0, 0], "replace":0, "replaceText":[""], "navForward":"nextButton", "navBack":"prevButton", "url":"https://planbook.com/planbook.html?t=1045823&k=Dottery&v=W&c=12587273&y=1218647", "weekNum":0}]}
+	$.ajax({
+		url: '/api',
+		type: 'post',
+		dataType: 'json',
+        contentType: 'application/json',
+		data: atob($.cookie('query-data')),
+		success: function (responseData) {
+			$.cookie('calendar-data', JSON.stringify(responseData));
+			clearCachedData();
 			for(var i = 0; i < responseData.length; i++) {
 				var data = responseData[i];
-				console.log(data);
 				for (var j = 0; j < 5; j++) {
 					for (var k = 0; k < data[j].length; k++) {
-						$('#'+ j +' .info').append('<div class="assignment">' + data[j][k] + '</div>');
+						$('#'+ j +' .info').append("<div class='assignment'>" + data[j][k] + '</div>');
 					}
 				}
 			}
-		});
-	}
+		}
+	});
+}
 
-	
+function getCachedCalendarData() {
+	var calendarData = JSON.parse($.cookie('calendar-data'));
+	for(var i = 0; i < calendarData.length; i++) {
+		var data = calendarData[i];
+		for (var j = 0; j < 5; j++) {
+			for (var k = 0; k < data[j].length; k++) {
+				$('#'+ j +' .info').append("<div class='assignment'>" + data[j][k] + '</div>');
+			}
+		}
+	}
+}
+
+$(document).ready(function() {
+	if (!!$.cookie('calendar-data')) {
+		getCachedCalendarData();
+	} else if (!!$.cookie('query-data')) {
+		getCalendarData();
+	} else {
+		console.log('No Configs');
+	}
 
 	var dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 	
@@ -172,6 +188,8 @@ $(document).ready(function() {
 		</div>
 	</div>
 </div>
+
+<button onclick="getCalendarData()">Refresh</button>
 
 </body>
 </html>
