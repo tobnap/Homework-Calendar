@@ -77,12 +77,8 @@ async function scrape(login, loginEmail, loginPassword, preNavigation, preNavBut
 
     // Executes the code on the page to gather the assignment data
     var data = await page.evaluate( (navigation, navButtons, navButtonTypes, navButtonNumbers, elements, elementTypes, elementNumbers) => {
-        var week = [];
 
-        // Loop for every day in a school week
-        for (var i = 0; i < 5; i++) {
-            var day = [];
-
+        function navigate(navigation, navButtonTypes, navButtons, navButtonNumbers) {
             // If navigation is true, navigate to the element that needs to be scraped
             if (navigation == true) {
                 for (var j = 0; j < navButtons.length; j++) {
@@ -101,8 +97,10 @@ async function scrape(login, loginEmail, loginPassword, preNavigation, preNavBut
                     }
                 }
             }
+        }
 
-            // Scrape assigment info from page and adds it to day array
+        function getAssignments(elementTypes, elements, elementNumbers) {
+            var day = [];
             if (elementTypes[i] == 'id') {
                 day.push(document.getElementById(elements[i]).innerText);
             } else if (elementTypes[i] == 'classname') {
@@ -124,9 +122,19 @@ async function scrape(login, loginEmail, loginPassword, preNavigation, preNavBut
             } else {
                 console.log('invalid type');
             }
+            return day;
+        }
 
+        var week = [];
+
+        // Loop for every day in a school week
+        for (var i = 0; i < 5; i++) {
+            // If navigation is true, navigate to the element that needs to be scraped
+            navigate(navigation, navButtonTypes, navButtons, navButtonNumbers);
+
+            // Scrape assigment info from page and adds it to day array
             // Push the array full of the assigments for that day to the assigments for the week array
-            week.push(day);
+            week.push(getAssignments(elementTypes, elements, elementNumbers));
         }
 
         return week;
